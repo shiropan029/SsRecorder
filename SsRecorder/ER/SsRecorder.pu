@@ -1,0 +1,71 @@
+@startuml yonde
+' hide the spot
+hide circle
+
+' avoid problems with angled crows feet
+skinparam linetype ortho
+
+entity "titles" as titles {
+  name
+  --
+  genre
+  detail
+  link
+  sheet_link
+  create_time
+  is_secondes_link
+  should_output
+}
+
+entity "analyses" as analyses {
+  name
+  --
+  screen_shot
+  secondes
+  word
+  analysis
+  link
+}
+
+entity "word_analyses" as word_analyses {
+    word
+    --
+    screen_shot
+    name
+    genre
+    analysis
+    link_with_seconds
+    secondes
+    analysis_sheet_link
+}
+
+entity "words" as words {
+    word
+    --
+    count
+    word_analysis_sheet_link
+}
+
+titles ||--o{ analyses
+words ||--o{ word_analyses
+
+
+
+' families ||--|{ users
+' families ||--|{ children
+' families ||--o{ follows
+' families ||--o{ picture_books
+' families ||--o{ read_records
+' families ||--o{ invites
+' users ||--o{ follows
+' users ||--o{ likes
+' users ||--o{ picture_books
+' users ||--o{ read_records
+' children ||--o{ child_read_record
+' picture_books ||--o{ read_records
+' picture_books ||--o{ likes
+' read_records ||--o{ child_read_record
+' read_records ||--o{ read_record_tag
+' tags ||--o{ read_record_tag
+
+@enduml

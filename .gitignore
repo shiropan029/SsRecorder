@@ -1,0 +1,66 @@
+# ビルド成果物
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+*.log
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Mono Auto Generated Files
+mono_crash.*
+
+# Visual Studio での設定ファイル
+.vscode/
+.vs/
+
+# NuGet パッケージ
+*.nupkg
+*.snupkg
+*.nuspec
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# テスト結果
+TestResults/
+*.VisualState.xml
+*.cache
+*.dbmdl
+*.pdb
+
+# アップロード不要な一時ファイル
+*.tmp
+*.bak
+*.swp
+*~
+
+# Windows 一時ファイル・隠しファイル
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# RiderやResharperなどのJetBrains系
+.idea/
+*.DotSettings.user
+
+# アプリの publish 出力先（手動で .gitignore から除外しない限り）
+publish/
+
+# スクリーンショットやログ出力など、開発中に出力するファイル（任意）
+CapturedImages/
+logs/
+
+# *.exe, *.dll をコミットしない（通常ビルド成果物なので）
+*.exe
+*.dll
+
+# 実行中に動的に生成・変動するもの
+CaptureLog/
+Setting.json
