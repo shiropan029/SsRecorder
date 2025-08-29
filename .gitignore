@@ -4,6 +4,8 @@ obj/
 [Bb]uild/
 [Ll]og/
 *.log
+*.exe
+*.dll
 
 # User-specific files
 *.user
@@ -45,21 +47,6 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# RiderやResharperなどのJetBrains系
-.idea/
-*.DotSettings.user
-
-# アプリの publish 出力先（手動で .gitignore から除外しない限り）
-publish/
-
-# スクリーンショットやログ出力など、開発中に出力するファイル（任意）
-CapturedImages/
-logs/
-
-# *.exe, *.dll をコミットしない（通常ビルド成果物なので）
-*.exe
-*.dll
 
 # プロジェクトとは関係のないツール
 Tool/
