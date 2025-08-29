@@ -1,0 +1,103 @@
+﻿Option Explicit
+
+'======================================================
+' タイトル別分析メモのExcelファイルを生成する
+'======================================================
+Public Sub createMstAnalysisFile()
+    
+    ' フォームからタイトルを受け取る
+    Dim analysisTitle As String
+    analysisTitle = InputBox("分析シートのタイトルを入力してください。", "分析メモの作成")
+    If analysisTitle = "" Then
+        MsgBox "一覧シートにタイトルがありません: " & analysisTitle, vbExclamation
+        Exit Sub
+    End If
+    
+    ' タイトルがA列にあるか検索
+    Dim ws As Worksheet: Set ws = thisWorkBook.Worksheets("一覧")
+    Dim targetCell As Range
+    Set targetCell = Range("A:A").Find(analysisTitle, _
+                                LookIn:=xlValues, _
+                                LookAt:=xlWhole, _
+                                SearchOrder:=xlByRows, _
+                                SearchDirection:=xlNext, _
+                                MatchCase:=True, _
+                                MatchByte:=True, _
+                                SearchFormat:=False)
+                                    
+    If targetCell Is Nothing Then
+        MsgBox "一覧シートにタイトルがありません: " & analysisTitle, vbExclamation
+        Exit Sub
+    End If
+    
+    ' テンプレートからコピーしてタイトル別分析シートを生成
+    If Dir$(MST_ANALYSIS_PATH, vbDirectory) = "" Then
+        MkDir MST_ANALYSIS_PATH    ' フォルダがなければ作成
+    End If
+    
+    Dim normalizedTitle As String
+    normalizedTitle = NormalizeFileName(analysisTitle)
+    If normalizedTitle = "" Then
+        normalizedTitle = "無題"
+    End If
+    
+    Dim newFileName As String
+    Dim newFilePath As String
+    newFileName = "分析メモ_" & normalizedTitle & ".xlsm" ' マクロ有効
+    newFilePath = MST_ANALYSIS_PATH & "\" & newFileName
+    
+    
+    ' 既に存在する場合は上書き確認
+    If Not Dir$(newFilePath) = "" Then
+        Dim overwriteOk As VbMsgBoxResult
+        overwriteOk = MsgBox("同名のファイルが既に存在します。" & vbCrLf & newFilePath & vbCrLf & "上書きしますか？", _
+                             vbExclamation + vbYesNo + vbDefaultButton2)
+        If overwriteOk = vbNo Then
+            MsgBox "処理を中止しました。", vbInformation
+            Exit Sub
+        End If
+        VBA.Kill newFilePath
+    End If
+    
+    ' ファイルコピー実行
+    FileCopy TEMP_SHEET_PATH, newFilePath
+    
+    ' ハイパーリンクの書き込み
+    Dim relativePath As String
+    ' 相対パスに直す
+    relativePath = Replace(newFilePath, thisWorkBook.path & "\", "")
+    
+    ws.Hyperlinks.Add Anchor:=Cells(targetCell.row, "E"), _
+                                    Address:=relativePath, _
+                                    TextToDisplay:=newFileName & "→"
+                                    
+    ' 作成日時の書き込み
+    ws.Cells(targetCell.row, "F").Value = Now
+    
+    MsgBox "分析メモを作成しました。" & vbCrLf & newFilePath, vbInformation
+    
+End Sub
+
+' Windowsのファイル名に使えない文字を除去・全角スペース等も整形
+Private Function NormalizeFileName(ByVal s As String) As String
+    Dim badChars As Variant
+    Dim i As Long
+    Dim t As String
+    
+    t = Trim$(s)
+    ' 禁止文字: \ / : * ? " < > | と制御文字
+    badChars = Array("\", "/", ":", "*", "?", """", "<", ">", "|")
+    For i = LBound(badChars) To UBound(badChars)
+        t = Replace$(t, badChars(i), "")
+    Next i
+    ' 先頭・末尾のドットやスペースは避ける
+    Do While Len(t) > 0 And (Right$(t, 1) = "." Or Right$(t, 1) = " ")
+        t = Left$(t, Len(t) - 1)
+    Loop
+    Do While Len(t) > 0 And (Left$(t, 1) = "." Or Left$(t, 1) = " ")
+        t = Mid$(t, 2)
+    Loop
+    
+    NormalizeFileName = t
+End Function
+

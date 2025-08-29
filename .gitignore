@@ -61,6 +61,5 @@ logs/
 *.exe
 *.dll
 
-# 実行中に動的に生成・変動するもの
-CaptureLog/
-Setting.json
+# プロジェクトとは関係のないツール
+Tool/

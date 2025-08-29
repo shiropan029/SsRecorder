@@ -1,0 +1,9 @@
+﻿Option Explicit
+
+Public ImageCell As Range
+Public Seconds As Variant
+Public Word As String
+Public Analysis As String
+Public link As String ' YouTube等のリンク
+Public ImageRowLink As String ' タイトル別分析シートへ：該当行へのリンク
+

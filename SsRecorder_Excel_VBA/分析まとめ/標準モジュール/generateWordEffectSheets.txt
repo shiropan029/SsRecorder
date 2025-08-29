@@ -1,0 +1,248 @@
+﻿Option Explicit
+
+'========================
+'一覧シートのデータを元に、各分析シートの内容を取得して、単語ごとに整理する
+'========================
+
+' 各個別分析シートを分析して、それを単語ごとにシートにまとめる
+Public Sub generateWordEffectSheets()
+
+    deleteSheets.deleteSheets thisWorkBook
+
+    ' 一覧から出力するMstTitleを取得する
+    Dim wsList As Worksheet: Set wsList = thisWorkBook.Worksheets("一覧")
+    Dim mstTitleList As Collection: Set mstTitleList = createMstTitleOutputList(wsList)
+
+    Dim i As Long
+    For i = 1 To mstTitleList.count
+        Dim mstTitle As mstTitle: Set mstTitle = mstTitleList(i)
+        
+        ' タイトルごとに分析結果を出力する
+        outputAnalysis mstTitle
+    Next i
+    
+    ' 単語まとめの記入+並べ替え
+    createWordSheet.createWordSheet
+    
+    ' 一覧シートを開く
+    thisWorkBook.Worksheets("一覧").Activate
+    
+    MsgBox "単語別シートを作成しました", vbInformation
+End Sub
+
+' 「一覧」から今回出力するMstTitleのListを作成
+Private Function createMstTitleOutputList(sheet As Worksheet) As Collection
+    Dim c As New Collection
+    Dim lastRow As Long
+    lastRow = sheet.Cells(sheet.Rows.count, 1).End(xlUp).row
+    Dim r As Long
+    For r = 2 To lastRow
+        ' 出力チェックがついていないものはスキップ
+        Dim isOutput As Boolean
+        isOutput = CBool(sheet.Cells(r, 8).Value)
+        If Not isOutput Then
+            GoTo Continue
+        End If
+        
+        ' mstTitleの取得処理
+        Dim mstTitle As mstTitle: Set mstTitle = New mstTitle
+        mstTitle.title = sheet.Cells(r, 1).Value
+        mstTitle.Genre = sheet.Cells(r, 2).Value
+        mstTitle.Detail = sheet.Cells(r, 3).Value
+        mstTitle.link = sheet.Cells(r, 4).Value
+        mstTitle.SheetLink = sheet.Cells(r, 5).Value
+        mstTitle.CreateTime = sheet.Cells(r, 6).Value
+        mstTitle.IsSecondLink = sheet.Cells(r, 7).Value
+        mstTitle.isOutput = isOutput
+        c.Add mstTitle
+Continue:
+    Next r
+    
+    Set createMstTitleOutputList = c
+End Function
+
+' mstTitleのシートを開き、中のmstAnalysisを使って、分析結果を出力する
+Private Function outputAnalysis(mstTitle As mstTitle)
+    ' タイトル別分析シートを探す
+    Dim path As String
+    path = MST_ANALYSIS_PATH & "\分析メモ_" & mstTitle.title & ".xlsm"
+    If Dir$(path) = "" Then
+        ' 見つからなければ .xlsx を探す
+        path = MST_ANALYSIS_PATH & "\分析メモ_" & mstTitle.title & ".xlsx"
+    End If
+    
+    If Dir$(path) = "" Then
+        Debug.Print "ファイルが見つかりません: " & path
+        Exit Function
+    End If
+    
+    ' ブックを開く
+    Dim awb As Workbook
+    Set awb = Application.Workbooks.Open(path, ReadOnly:=True)
+    
+    ' メモシートを取得
+    Dim asheet As Worksheet
+    Set asheet = awb.Worksheets("メモ")
+    If asheet Is Nothing Then
+        Debug.Print "『メモ』シートが存在しません: " & path
+        awb.Close SaveChanges:=False
+        Exit Function
+    End If
+    
+    ' MstAnalysisListの取得処理
+    Dim alist As Collection: Set alist = mstAnalysis_LoadCsv(asheet, awb)
+
+    ' mstWordEffectmstWordEffectDict（今回出力するデータ）の生成処理
+    Dim mstWordEffectDict As Object: Set mstWordEffectDict = CreateObject("Scripting.Dictionary") ' key：Word  value：Collection(MstWordEffect)
+    Dim i As Long
+    For i = 1 To alist.count
+        Dim mstAnalysis As mstAnalysis: Set mstAnalysis = alist(i)
+        Dim mstWordEffect As mstWordEffect: Set mstWordEffect = New mstWordEffect
+        
+        mstWordEffect.InitFrom mstTitle, mstAnalysis
+
+        ' --- 単語キー ---
+        Dim key As String: key = CStr(mstWordEffect.Word)
+        If Trim$(key) = "" Then
+            key = "単語未指定"
+        End If
+        
+        ' 新規
+        If Not mstWordEffectDict.exists(key) Then
+            Dim col As Collection
+            Set col = New Collection
+            mstWordEffectDict.Add key, col
+        End If
+       
+       ' 該当分析を追加
+       mstWordEffectDict(key).Add mstWordEffect
+    Next i:
+    
+    ' mstWordEffectDictの情報を基に、分析シートに書き出し
+    ' コピーシートの取得
+    Dim thisWb As Workbook: Set thisWb = thisWorkBook
+    Dim copySheet As Worksheet
+    Set copySheet = thisWb.Worksheets("コピー元")
+    
+    ' シート名の配列を作成
+    Dim sheetNameArray() As String
+    Dim count As Long: count = 0
+    Dim ws As Worksheet
+    For Each ws In thisWb.Worksheets
+        count = count + 1
+        ReDim Preserve sheetNameArray(1 To count)
+        sheetNameArray(count) = ws.Name
+    Next ws
+    
+    Dim k As Variant ' kはkey（単語）の意
+    For Each k In mstWordEffectDict.keys
+        
+        Dim mstWordEffectList As Collection: Set mstWordEffectList = mstWordEffectDict(k)
+
+        ' sheetNameArrayに「k」が無かったらシートは無い扱い→新規作成
+        If Not existsInArray(k, sheetNameArray) Then
+            copySheet.Copy After:=thisWb.Worksheets(thisWb.Worksheets.count)
+            Set ws = thisWb.Worksheets(thisWb.Worksheets.count)
+            ws.Name = k
+            ws.Tab.Color = RGB(215, 215, 215) ' 灰色
+            
+            Dim newCount As Long
+            newCount = UBound(sheetNameArray) + 1
+            ReDim Preserve sheetNameArray(1 To newCount)
+            sheetNameArray(newCount) = k
+        Else
+            Set ws = thisWb.Worksheets(k)
+        End If
+            
+
+        ' B列の最初の空行（2行目以降）を取得
+        Dim startRow As Long
+        Dim row As Long
+        startRow = 2
+        For row = 2 To ws.Rows.count
+            If ws.Cells(row, 2).Value = "" Then
+                startRow = row
+                Exit For
+            End If
+        Next row
+
+        Dim n As Long: n = mstWordEffectList.count
+        If n > 0 Then
+            Dim arr() As Variant
+            ReDim arr(1 To n, 1 To 7)  ' 7はカラム数
+
+            Dim j As Long
+            For j = 1 To n
+                Dim mwe As mstWordEffect: Set mwe = mstWordEffectList(j)
+                ' A列（画像）は配列に入れない。ResizeでB列から書き出すのでtitleは(j, 1)で合っている
+                arr(j, 1) = mwe.title
+                arr(j, 2) = mwe.Genre
+                arr(j, 3) = mwe.Analysis
+                arr(j, 4) = "=HYPERLINK(""" & mwe.LinkWithSeconds & """)"
+                arr(j, 5) = mwe.Seconds
+                arr(j, 6) = mwe.ImageRowLink
+                
+                ' A列 画像
+                Dim dst As Range: Set dst = ws.Cells(startRow + j - 1, 1)
+                mwe.ImageCell.Copy Destination:=dst
+                dst.UpdatePictureInCellAlternativeText AlternativeText:="画像"
+                
+            Next j
+        
+            ' B～G に値を一括書き込み
+            ws.Cells(startRow, 2).Resize(n, 6).Value = arr
+            
+            Application.CutCopyMode = False
+        End If
+
+    Next k
+
+    ' imageCellの参照保持のために、画像の書き出しが終了してから、タイトル別分析シートを閉じる
+    awb.Close SaveChanges:=False
+End Function
+
+
+' 指定した単語が sheetNameArray に含まれているかチェック
+Private Function existsInArray(target As Variant, sheetNameArray() As String) As Boolean
+    Dim i As Long
+    For i = LBound(sheetNameArray) To UBound(sheetNameArray)
+        If sheetNameArray(i) = target Then
+            existsInArray = True
+            Exit Function
+        End If
+    Next i
+    Exit Function
+    
+    existsInArray = False
+End Function
+
+' 分析シートから MstAnalysis のリストを生成
+Private Function mstAnalysis_LoadCsv(sheet As Worksheet, wb As Workbook) As Collection
+    Dim c As New Collection
+    Dim lastRow As Long, lastCol As Long
+    
+    lastRow = sheet.Cells(sheet.Rows.count, 1).End(xlUp).row
+    lastCol = sheet.Cells(1, sheet.Columns.count).End(xlToLeft).Column
+
+    Dim r As Long
+    For r = 2 To lastRow
+        ' B列が空なら終了
+        If sheet.Cells(r, 2).Value = "" Then
+            Exit For
+        End If
+        
+        Dim ma As mstAnalysis: Set ma = New mstAnalysis
+        Dim srcCell As Range
+        Set srcCell = sheet.Cells(r, 1)
+        Set ma.ImageCell = srcCell
+        ma.Seconds = sheet.Cells(r, 2).Value
+        ma.Word = sheet.Cells(r, 3).Value
+        ma.Analysis = sheet.Cells(r, 4).Value
+        ma.link = sheet.Cells(r, 5).Value
+        
+        ' 各分析シート・該当セルへのリンク
+        ma.ImageRowLink = "=HYPERLINK(""" & "タイトル別分析\" & wb.Name & "#'メモ'!A" & r & """,""" & wb.Name & "→"")"
+        c.Add ma
+    Next
+    Set mstAnalysis_LoadCsv = c
+End Function

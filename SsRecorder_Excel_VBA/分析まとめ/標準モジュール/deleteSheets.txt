@@ -1,0 +1,36 @@
+﻿Option Explicit
+
+'========================
+'keep sheet以外を削除する
+'========================
+
+' keep sheet以外を削除する
+Public Sub deleteSheets(ByVal wb As Workbook)
+    Dim keep As Variant: keep = KEEP_SHEETS()
+    Dim keepDict As Object: Set keepDict = CreateObject("Scripting.Dictionary")
+    Dim i As Long
+    For i = LBound(keep) To UBound(keep)
+        keepDict(keep(i)) = True
+    Next
+
+    Dim keepArr As Variant: keepArr = KEEP_SHEETS()
+    Application.DisplayAlerts = False
+    Dim ws As Worksheet
+    For Each ws In wb.Worksheets
+        If Not inArray(ws.Name, keepArr) Then
+            ws.Delete
+        End If
+    Next
+    Application.DisplayAlerts = True
+End Sub
+
+' 文字列が配列の中にあるか
+Public Function inArray(str As String, arr As Variant) As Boolean
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        If str = arr(i) Then
+            inArray = True: Exit Function
+        End If
+    Next
+    inArray = False
+End Function
