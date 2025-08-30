@@ -1,0 +1,5 @@
+﻿Option Explicit
+
+Public Word As String
+Public count As Long
+Public ImageCellLink As String

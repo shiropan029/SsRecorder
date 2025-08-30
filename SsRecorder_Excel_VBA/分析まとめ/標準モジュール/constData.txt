@@ -1,0 +1,27 @@
+﻿Option Explicit
+
+'========================
+' 定数の管理
+'========================
+
+' 親フォルダのパス
+Public Function PARENT_FOLDER_PATH() As String
+    PARENT_FOLDER_PATH = thisWorkBook.path
+End Function
+
+' タイトル別分析メモシートのテンプレートのパス
+Public Function TEMP_SHEET_PATH() As String
+    TEMP_SHEET_PATH = thisWorkBook.path & "\" & "分析メモ_テンプレート.xlsm"
+    ' TEMP_SHEET_PATH = "D:\Animation\演出分析\分析メモ_テンプレート.xlsm"
+End Function
+
+' 削除しないシートの配列
+Public Function KEEP_SHEETS() As Variant
+    KEEP_SHEETS = Array("一覧", "コピー元", "単語まとめ", "プルダウン")
+End Function
+
+' タイトル別分析メモシートのパス
+Public Function MST_ANALYSIS_PATH() As String
+    MST_ANALYSIS_PATH = thisWorkBook.path & "\" & "タイトル別分析"
+    ' MST_ANALYSIS_PATH = "D:\Animation\演出分析\タイトル別分析"
+End Function

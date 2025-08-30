@@ -1,0 +1,162 @@
+﻿Option Explicit
+
+'========================
+' 単語まとめシート生成・整列
+'========================
+Public Sub createWordSheet()
+    Dim thisWb As Workbook: Set thisWb = thisWorkBook
+    
+    ' 単語シート取得
+    Dim wsIndex As Worksheet
+    Set wsIndex = thisWb.Worksheets("単語まとめ")
+    
+    Dim keepArr As Variant: keepArr = KEEP_SHEETS()
+    
+    ' 対象シートから MstWord を収集
+    Dim list As Collection: Set list = New Collection
+    Dim ws As Worksheet
+    For Each ws In thisWb.Worksheets
+        If Not isKeepSheet(ws.Name, keepArr) And ws.Name <> wsIndex.Name Then
+            Dim mw As MstWord: Set mw = New MstWord
+            mw.Word = ws.Name
+            mw.count = countWordCount(ws, 2) ' B列の2行目以降、最初の空で打ち切り
+            mw.ImageCellLink = "=HYPERLINK(""#'" & mw.Word & "'!A2"",""" & mw.Word & "→"")"
+            list.Add mw
+        End If
+    Next ws
+    
+    ' ソート（出現数降順）
+    If list.count > 1 Then
+        sortMstWordByCountDesc list
+    End If
+    
+    ' 単語シートの2行目以降をクリア
+    clearBody wsIndex
+    
+    ' 書き込み（A:単語, B:件数, C:リンク）
+    Dim n As Long: n = list.count
+    If n > 0 Then
+        Dim arr() As Variant
+        ReDim arr(1 To n, 1 To 3)
+    
+        Dim i As Long
+        For i = 1 To n
+            Dim it As MstWord: Set it = list(i)
+            arr(i, 1) = it.Word
+            arr(i, 2) = it.count
+            arr(i, 3) = it.ImageCellLink
+        Next
+        
+        ' 一括書き込み
+        wsIndex.Cells(2, 1).Resize(n, 3).Value2 = arr
+    End If
+    
+    ' 各単語シートを単語数降順に並び替え
+    If list.count > 0 Then
+        reorderSheetsByList thisWb, keepArr, list
+    End If
+    
+End Sub
+
+' KEEP_SHEETS() に含まれるか
+Private Function isKeepSheet(nm As String, keepArr As Variant) As Boolean
+    Dim i As Long
+    For i = LBound(keepArr) To UBound(keepArr)
+        If CStr(keepArr(i)) = nm Then
+            isKeepSheet = True
+            Exit Function
+        End If
+    Next
+End Function
+
+' 各単語の行数を数える
+Private Function countWordCount(ws As Worksheet, colIdx As Long) As Long
+    Dim r As Long, cnt As Long
+    r = 2
+    Do While r <= ws.Rows.count
+        ' データが無かったら終了
+        If ws.Cells(r, colIdx).Value = "" Then
+            Exit Do
+        End If
+        cnt = cnt + 1
+        r = r + 1
+    Loop
+    countWordCount = cnt
+End Function
+
+' 「単語シート」の2行目以降をクリア
+Private Function clearBody(ws As Worksheet)
+    Dim lastR As Long
+    lastR = ws.Cells(ws.Rows.count, 1).End(xlUp).row
+    If lastR >= 2 Then
+        ws.Rows("2:" & lastR).ClearContents
+    End If
+End Function
+
+' 単語数降順ソート：Collection → 配列 → 並べ替え → Collection 再構築
+Private Function sortMstWordByCountDesc(ByRef c As Collection)
+    Dim n As Long: n = c.count
+    If n <= 1 Then
+        Exit Function
+    End If
+    
+    ' ソート処理用の配列作成
+    Dim arr() As MstWord
+    ReDim arr(1 To n)
+
+    Dim i As Long, j As Long
+    For i = 1 To n
+        Set arr(i) = c(i)
+    Next i
+
+    ' 配列を降順でソート
+    Dim tmp As MstWord
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If arr(j).count > arr(i).count Then
+                Set tmp = arr(i)
+                Set arr(i) = arr(j)
+                Set arr(j) = tmp
+            End If
+        Next j
+    Next i
+
+    ' cの作り直し
+    Do While c.count > 0
+        c.Remove 1
+    Loop
+    For i = 1 To n
+        c.Add arr(i)
+    Next i
+End Function
+
+' 並び替え：KEEP_SHEETS は固定、単語シートも固定。
+' それ以外のシート（=list）を、単語シートの直後から降順に並べる。
+Private Function reorderSheetsByList(wb As Workbook, keepArr As Variant, list As Collection)
+    Dim idxSheet As Worksheet: Set idxSheet = wb.Worksheets("単語まとめ")
+    
+    ' 単語シートの直後の位置を起点にして並べる
+    Dim insertPos As Long: insertPos = idxSheet.Index
+    
+    Dim basePos As Long
+    basePos = UBound(keepArr) + 1
+    Dim i As Long
+    For i = 1 To list.count
+        Dim it As MstWord: Set it = list(i)
+        Dim ws As Worksheet
+        Set ws = wb.Worksheets(it.Word)
+        
+        If Not ws Is Nothing Then
+            ' KEEPに含まれるなら触らない
+            If Not isKeepSheet(ws.Name, keepArr) Then
+                ' keepの最後の直後へ順に積む
+                ws.Move After:=wb.Worksheets(basePos)
+                basePos = ws.Index
+            End If
+        End If
+    Next
+End Function
+
+
+
+

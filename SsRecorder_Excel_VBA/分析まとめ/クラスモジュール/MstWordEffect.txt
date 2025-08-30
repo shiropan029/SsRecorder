@@ -1,0 +1,37 @@
+﻿' Class: MstWordEffect
+Public Word As String
+Public ImageCell As Range
+Public title As String
+Public Genre As String
+Public Analysis As String
+Public LinkWithSeconds As String
+Public Seconds As Integer
+Public ImageRowLink As String ' todo：個別分析シートへのジャンプできる型にする
+
+Public Sub InitFrom(ByVal mt As mstTitle, ByVal ma As mstAnalysis)
+    Me.Word = ma.Word
+    Me.title = mt.title
+    Me.Genre = mt.Genre
+    Me.Analysis = ma.Analysis
+    Me.Seconds = ma.Seconds
+    Me.ImageRowLink = ma.ImageRowLink
+    
+    ' 秒数付きリンクにするか
+    Dim link As String
+    If mt.IsSecondLink Then
+        ' リンクが指定されていないなら、合成
+        If Len(ma.link) = 0 Then
+            ma.link = mt.link & "&t=" & ma.Seconds & "s"
+        End If
+        link = ma.link
+    Else
+        link = mt.link
+    End If
+    Me.LinkWithSeconds = link
+    
+    ' 画像が入ったセル
+    If Not ma.ImageCell Is Nothing Then
+        Set Me.ImageCell = ma.ImageCell
+    End If
+End Sub
+

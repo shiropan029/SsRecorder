@@ -1,0 +1,32 @@
+﻿Option Explicit
+
+' 空行にデータを挿入する（C#から実行する関数）
+Private Sub insertAnalysisData(imgPath As String, seconds As Integer, word As String, analysis As String, url As String)
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    Dim ws As Worksheet: Set ws = wb.Worksheets("メモ")
+    Dim r As Long
+    
+    ' 2行目以降の空行を見つける
+    r = 2
+    Do While Not ws.Cells(r, "B").Value = ""
+        r = r + 1
+    Loop
+
+    ' 画像の挿入
+    ws.Range("A" & r).Select
+    Selection.InsertPictureInCell imgPath
+    Selection.UpdatePictureInCellAlternativeText AlternativeText:="画像"
+
+    ' 各引数の挿入
+    ws.Cells(r, "B").Value = seconds
+    ws.Cells(r, "C").Value = word
+    ws.Cells(r, "D").Value = analysis
+
+    ' リンクはハイパーリンク表示
+    If Len(url) > 0 Then
+        ws.Hyperlinks.Add Anchor:=ws.Cells(r, "E"), Address:=url, TextToDisplay:=url
+    End If
+
+    ' 保存
+    ThisWorkbook.Save
+End Sub
