@@ -8,7 +8,8 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace SsRecorder.Service {
 
-    // Excelへの起動のフローすべてを管理
+    // ViewとModelの仲介役
+    // Excelの書き込みもここで行う
     public class SsRecorderService {
 
         private SsRecorderModel _model;
@@ -48,7 +49,7 @@ namespace SsRecorder.Service {
         }
 
         /// <summary>
-        /// Excelに記録する
+        /// Excelに記録する処理の流れ
         /// </summary>
         /// <param name="data"></param>
         public void RecordFlow(RecordData data) {
@@ -59,8 +60,8 @@ namespace SsRecorder.Service {
 
             if (string.IsNullOrEmpty(_model.Settings.Link)) {
                 MessageBox.Show("「設定」からリンクを設定してください");
+                return;
             }
-
 
             string excelPath = _model.Settings.ExcelPath;
             if (string.IsNullOrEmpty(excelPath)) {
@@ -70,6 +71,7 @@ namespace SsRecorder.Service {
 
             if (!File.Exists(excelPath)) {
                 MessageBox.Show("記録するExcelファイルが見つかりません。もう一度設定してください");
+                return;
             }
 
             string tempDir = ConstSsRecorder.TEMP_IMAGE_DIR_PATH;
@@ -105,8 +107,12 @@ namespace SsRecorder.Service {
             }
         }
 
-
-
+        /// <summary>
+        /// Excelに書き込む
+        /// </summary>
+        /// <param name="excelPath"></param>
+        /// <param name="data"></param>
+        /// <exception cref="InvalidOperationException"></exception>
         private void WriteToExcel(string excelPath, ExcelColumns data) {
             Excel.Workbook workbook = null;
             Excel.Application app = null;
@@ -141,13 +147,21 @@ namespace SsRecorder.Service {
             } catch (Exception ex) {
                 MessageBox.Show($"Excelへの書き込みに失敗しました。\n{ex.Message}");
             } finally {
-                if (workbook != null)
+                if (workbook != null) {
                     Marshal.FinalReleaseComObject(workbook);
-                if (app != null)
+                }   
+                if (app != null) {
                     Marshal.FinalReleaseComObject(app);
+                }
             }
         }
 
+        /// <summary>
+        /// パスが一致しているか
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         private bool PathsEqual(string a, string b) {
             string fa = Path.GetFullPath(a);
             string fb = Path.GetFullPath(b);
@@ -155,17 +169,15 @@ namespace SsRecorder.Service {
         }
 
         /// <summary>
-        /// Excel がそのファイルを開いている可能性を判定。
-        /// ・Excelは通常、対象ファイルに排他ロックを保持（FileShare.None でOpenできない）
-        /// ・同時に「~$xxx.xlsx」のテンポラリ（ロックファイル）を作ることが多い
+        /// Excelファイルが開かれているか
         /// これらのどちらかが真なら「Excelで開いている」と判断
         /// </summary>
         private bool IsWorkbookOpenByExcel(string fullPath) {
-            // 1) 排他ロック（Open + FileShare.None で試す）
+            // 排他ロック
             if (IsFileLocked(fullPath))
                 return true;
 
-            // 2) テンポラリ (~$xxxx.xlsx) の存在
+            // ~$xxxx.xlsx の存在確認
             string dir = Path.GetDirectoryName(fullPath) ?? ".";
             string name = Path.GetFileName(fullPath);
             string lockFile = Path.Combine(dir, "~$" + name);
@@ -175,6 +187,11 @@ namespace SsRecorder.Service {
             return false;
         }
 
+        /// <summary>
+        /// Excelがロックされているか
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         private bool IsFileLocked(string path) {
             try {
                 using (var fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) {
@@ -182,12 +199,9 @@ namespace SsRecorder.Service {
                 }
                 return false;
             } catch (IOException) {
-                // IOException＝他プロセスによりロックされている可能性が高い（Excel想定）
+                // IOException：他プロセスによりロックされている可能性が高い
                 return true;
             }
         }
-
-
-
     }
 }
