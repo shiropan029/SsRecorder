@@ -1,0 +1,20 @@
+﻿Option Explicit
+
+'========================
+'ボタンに表示されたテキスト名のシートを表示する
+'========================
+
+' ボタンに表示されたテキスト名のシートを表示する
+Public Sub activateSheetFromButton()
+    Dim btnText As String
+    btnText = activeSheet.Shapes(Application.Caller).TextFrame.Characters.Text
+    
+    ' その名前のシートが存在すればアクティブ化
+    On Error Resume Next
+    Worksheets(btnText).Activate
+    If Err.Number <> 0 Then
+        MsgBox "シート '" & btnText & "' は存在しません。", vbExclamation
+        Err.Clear
+    End If
+    On Error GoTo 0
+End Sub

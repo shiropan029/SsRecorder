@@ -1,0 +1,10 @@
+﻿Option Explicit
+
+Public title As String
+Public Genre As String
+Public link As String
+Public SheetLink As String
+Public Detail As String
+Public CreateTime As String
+Public IsSecondLink As Boolean  ' 秒数指定リンクにするか
+Public isOutput As Boolean ' 単語分析処理を行うか
