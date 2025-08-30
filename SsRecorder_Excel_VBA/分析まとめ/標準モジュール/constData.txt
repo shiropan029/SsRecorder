@@ -12,7 +12,6 @@ End Function
 ' タイトル別分析メモシートのテンプレートのパス
 Public Function TEMP_SHEET_PATH() As String
     TEMP_SHEET_PATH = thisWorkBook.path & "\" & "分析メモ_テンプレート.xlsm"
-    ' TEMP_SHEET_PATH = "D:\Animation\演出分析\分析メモ_テンプレート.xlsm"
 End Function
 
 ' 削除しないシートの配列
@@ -23,5 +22,4 @@ End Function
 ' タイトル別分析メモシートのパス
 Public Function MST_ANALYSIS_PATH() As String
     MST_ANALYSIS_PATH = thisWorkBook.path & "\" & "タイトル別分析"
-    ' MST_ANALYSIS_PATH = "D:\Animation\演出分析\タイトル別分析"
 End Function
